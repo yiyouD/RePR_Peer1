@@ -1,0 +1,116 @@
+Reproducible Research Peer Assessment1
+
+==============================================
+
+
+1.Loading and preprocessing the data
+
+```{r}
+
+activity = read.csv("activity.csv")  ## Load the Data
+activity$date = as.Date(data$date,"%Y-%m-%d") ##Transform/Process the data in to a format suitable for analysis
+activity = as.data.frame(activity)
+```
+
+2. What is mean total number of steps taken per day?
+
+Use "reshape2" pacakges to caluclate total numbers.
+
+```{r}
+library(reshape2)
+library(ggplot2)
+
+
+activitymeltdate = melt(activity,id=c("date"),measure.vars=c("steps"),na.rm=TRUE) ##Ignor the missing value in the Dataset.
+activitysum = dcast(activitymeltdate, date ~ variable, sum)
+```
+
+```{r = fig.width = 7, fig.height = 5}
+hist(activitysum$steps, col = "blue") #make a histogram of the totalnumber of steps taken each day.
+
+qplot(x = steps, data = activitysum)
+
+## another way.
+
+mean(activity$steps) 
+
+median(activity$steps)
+```
+
+3. What is the average daily activity pattern?
+
+
+
+```{r}
+activitymeltinterval = melt(activity, id = c("interval"),measure.vars = c("steps"), na.rm = TRUE)
+                     <-melt(data,id=c("interval"),measure.vars=c("steps"),na.rm=TRUE)
+activitymean = dcast(activitymeltinterval, interval ~ variable, mean)
+```
+
+```{r = fig.width = 7, fig.height = 5}
+plot(activitymean$interval, activitymean$steps, type = "l", xlab = "Interval", ylab = "Average of Steps" )
+
+interval[activitymean$steps==max(activitymean$steps),1] ## contain max number of steps
+
+
+```
+
+
+4. Imputing missing values.
+
+Calculate and report the total number of missing values in the dataset
+
+```{r}
+missing = subset(activity, !is.na(steps))
+
+NAmissing = nrow(activity) - nrow(missing)  
+NAmissing ## number of missing Values. 
+```
+
+replace the NA values to replace them with the average of steps all days for each interval. 
+```{r}
+activity2 = activity
+for (i in 1:nrow(activity2)){
+  if (is.na(activity2[i,1])){
+    activity2[i,1]<-interval[(activitymean[,1]==activity2[i,3]),2]
+  }
+}
+```
+
+reproduce data to make Histogram
+```{r}
+activitymeltdata2 = melt(activity2,id=c("date"),measure.vars=c("steps"),na.rm=TRUE)
+
+activitysum2 = dcast(activitymeltdata2,date~variable,sum)
+
+hist(activitysum2$steps,col="green",xlab="") #Makes the histogram relace NA values.
+
+mean(activitysum2$steps) # mean of the steps of which replace NA values.  
+
+median(activitysum2$steps) # median 
+
+```
+
+5. Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+
+activityFactor = activity
+activityFactor$date = weekdays(activityFactor$date)
+
+
+for (i in 1:nrow(activityFactor)){
+  if (activityFactor[i,2]=="Sunday" | activityFactor[i,2]=="Saturday"){
+    activityFactor[i,2]="weekend"
+  } else {
+    activityFactor[i,2]="weekdays"
+  }
+}
+
+
+
+library(lattice)
+xyplot(activityFactor$steps~ activityFactor$interval |activityFactor$date, data=activityFactor, layout = c(1, 2),type="l")
+
+
+```
