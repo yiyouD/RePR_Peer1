@@ -1,0 +1,127 @@
+Reproducible Research/ Peer Assessment 1
+========================================================
+
+
+## 1.Loading and preprocessing the data
+
+
+```{r}
+setwd("../Downloads")
+data<-read.csv("./activity.csv",sep=",")
+data$date<-as.Date(data$date,"%Y-%m-%d")
+
+```
+
+## 2.What is mean total number of steps taken per day?
+
+
+```{r}
+install.packages("reshape2")
+library(reshape2)
+datamelt<-melt(data,id=c("date"),measure.vars=c("steps"),na.rm=TRUE)
+data_sum<-dcast(datamelt,date~variable,sum)
+
+```
+
+Now with our new data frame we can create our histogram of the total number of steps taken each day:
+
+```{r fig.width=7, fig.height=6}
+hist(data_sum$steps,col="blue",xlab="")
+```
+
+The mean and the median total number of steps taken per day are calculated as below:
+```{r}
+mean(data_sum$steps)
+```
+
+```{r}
+median(data_sum$steps)
+```
+
+## 3.What is the average daily activity pattern?
+
+
+
+```{r}
+datamelt2<-melt(data,id=c("interval"),measure.vars=c("steps"),na.rm=TRUE)
+interval<-dcast(datamelt2,interval~variable,mean)
+head(interval)
+```
+
+```{r fig.width=7, fig.height=6}
+plot(interval$interval, interval$steps,type="l",xlab="Intervals",ylab="Average",col="red",lwd=2)
+```
+
+
+```{r}
+interval[interval$steps==max(interval$steps),1]
+(interval[interval$steps==max(interval$steps),1])/5
+```
+
+
+## 4.Imputing missing values
+
+```{r}
+data1 <-subset(data, !is.na(steps))
+nrow(data)
+nrow(data1)
+missing<-nrow(data)-nrow(data1)
+No_of_missing
+
+```
+
+
+```{r}
+newData<-data
+for (i in 1:nrow(newData)){
+  if (is.na(newData[i,1])){
+    newData[i,1]<-interval[(interval[,1]==newData[i,3]),2]
+  }
+}
+head(newData)
+
+```
+Now we use the same method to creat the histogram for the new data set where the NA values were replaced :
+```{r}
+new_datamelt<-melt(newData,id=c("date"),measure.vars=c("steps"),na.rm=TRUE)
+new_data_sum<-dcast(new_datamelt,date~variable,sum)
+
+```
+
+```{r fig.width=7, fig.height=6}
+hist(new_data_sum$steps,col="green")
+```
+
+```{r}
+mean(new_data_sum$steps)
+median(new_data_sum$steps)
+```
+
+If we compare the new values with those from section 2:
+```{r echo=FALSE}
+mean(data_sum$steps)
+median(data_sum$steps)
+```
+
+## 5.Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+factorData<-data
+factorData$date<-weekdays(factorData$date)
+
+```
+```{r}
+for (i in 1:nrow(factorData)){
+  if (factorData[i,2]=="일요일" | factorData[i,2]=="토요일"){
+    factorData[i,2]<-"weekend"
+  } else {
+    factorData[i,2]<-"weekdays"
+  }
+}
+head(factorData)
+```
+```{r fig.width=11, fig.height=6 }
+library(lattice)
+plot<-xyplot(factorData$steps~ factorData$interval | factorData$date, data=factorData, layout = c(1, 2),type="l",xlab="Interval",ylab="Number")
+print(plot)
+```
